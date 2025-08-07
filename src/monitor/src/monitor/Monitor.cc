@@ -22,6 +22,7 @@
 #include "StreamManager.h"
 #include "SqliteDB.h"
 #include "MySqlDB.h"
+#include "PostgreSqlDB.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -104,7 +105,7 @@ void Monitor::start()
 
         sqlDB = make_unique<SqliteDB>(get_var_location() + "one.db", timeout);
     }
-    else if ( db_backend == "mysql" )
+    else
     {
         string server;
         int    port;
@@ -125,12 +126,20 @@ void Monitor::start()
 
         _db_m->vector_value("CONNECTIONS", connections, 15);
 
-        sqlDB = make_unique<MySqlDB>(server, port, user, passwd, db_name,
-                                     encoding, connections, compare_binary);
-    }
-    else
-    {
-        throw runtime_error("DB BACKEND must be sqlite or mysql.");
+        if ( db_backend == "postgresql" )
+        {
+            sqlDB = make_unique<PostgreSqlDB>(server, port, user, passwd, db_name,
+                                              connections);
+        }
+        else if ( db_backend == "mysql" )
+        {
+            sqlDB = make_unique<MySqlDB>(server, port, user, passwd, db_name,
+                                         encoding, connections, compare_binary);
+        }
+        else
+        {
+            throw runtime_error("Unknown DB backend " + db_backend);
+        }
     }
 
     // -------------------------------------------------------------------------
